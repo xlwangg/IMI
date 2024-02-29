@@ -1,0 +1,196 @@
+## IMI configuration file
+## Documentation @ https://imi.readthedocs.io/en/latest/getting-started/imi-config-file.html
+
+## General
+RunName: "Test_Permian_12km"
+isAWS: false
+UseSlurm: true
+SafeMode: false
+S3Upload: false
+
+## Period of interest
+StartDate: 20220601
+EndDate: 20220608
+SpinupMonths: 1
+
+## Use blended TROPOMI+GOSAT data (true)? Or use operational TROPOMI data (false)?
+BlendedTROPOMI: true
+
+## Region of interest
+##   These lat/lon bounds are only used if CreateAutomaticRectilinearStateVectorFile: true
+##   Otherwise lat/lon bounds are determined from StateVectorFile
+LonMin: -105
+LonMax: -103
+LatMin: 31
+LatMax: 33
+
+## Use nested grid simulation?
+##   Must be "true" for IMI regional inversions
+NestedGrid: true
+
+## Select nested grid region (for using pre-cropped meteorological fields)
+##   Current options are listed below with ([lat],[lon]) bounds:
+##     "AF" : Africa ([-37,40], [-20,53])
+##     "AS" : Asia ([-11,55],[60,150]) 
+##     "EU" : Europe ([33,61],[-30,70])
+##     "ME" : Middle East ([12,50], [-20,70])
+##     "NA" : North America ([10,70],[-140,-40])
+##     "OC" : Oceania ([-50,5], [110,180])
+##     "RU" : Russia ([41,83], [19,180])
+##     "SA" : South America ([-59,16], [-88,-31])
+##     ""   : Use for global met fields (global simulation/custom nested grids)
+##   For example, if the region of interest is in Europe ([33,61],[-30,70]), select "EU".
+NestedRegion: "NA"
+
+## Kalman filter options
+KalmanMode: false
+UpdateFreqDays: 7
+NudgeFactor: 0.1
+
+## State vector
+CreateAutomaticRectilinearStateVectorFile: false
+nBufferClusters: 8
+BufferDeg: 5
+LandThreshold: 0.25
+OffshoreEmisThreshold: 0
+OptimizeBCs: true
+
+## Point source datasets
+## Used for visualizations and state vector clustering
+PointSourceDatasets: ["SRON"]
+
+## Clustering Options
+ReducedDimensionStateVector: false
+DynamicKFClustering: false
+ClusteringMethod: "kmeans"
+NumberOfElements: 45
+ForcedNativeResolutionElements: 
+  - [31.5, -104]
+
+## Custom state vector
+StateVectorFile: "/n/home00/xlwang/xlwang/methane_inversion/InputData/state_vectors/statevectors/StateVector_Permian_0125.nc"
+ShapeFile: "resources/shapefiles/PermianBasin_Extent_201712.shp"
+
+## Inversion
+## Note PriorError is a relative percentage 
+## and PriorErrorBCs is in ppb
+## PriorErrorBufferElements is only used if LognormalErrors is true
+LognormalErrors: true
+PriorError: 2.0
+PriorErrorBCs: 10.0
+PriorErrorBufferElements: 0.5
+ObsError: 15
+Gamma: 1.0
+PrecomputedJacobian: false
+ReferenceRunDir: "/n/home00/xlwang/xlwang/Test_Permian_lognormal"
+
+## Grid
+##   Select "0.25x0.3125" and "geosfp", or "0.5x0.625" and "merra2"
+##   Add options for "0.125x0.15625" for "geosfp" (xlwang, 2023)
+Res: "0.125x0.15625"
+Met: "geosfp"
+
+## Setup modules
+##   Turn on/off different steps in setting up the inversion 
+SetupTemplateRundir: false
+SetupSpinupRun: false
+SetupJacobianRuns: false
+SetupInversion: false
+SetupPosteriorRun: true
+
+## Run modules
+##   Turn on/off different steps in performing the inversion
+RunSetup: true
+DoSpinup: false
+DoJacobian: false
+DoInversion: false
+DoPosterior: true
+
+## IMI preview
+DoPreview: false
+DOFSThreshold: 0
+
+## resource allocation settings for slurm jobs
+SimulationCPUs: 32
+SimulationMemory: 100000
+JacobianCPUs: 1
+JacobianMemory: 100000
+RequestedTime: "3-12:00"
+SchedulerPartition: "seas_compute,huce_cascade,huce_intel"
+#seas_compute,huce_cascade,huce_intel
+
+##--------------------------------------------------------------------
+## Additional settings for GEOS-Chem simulations
+##--------------------------------------------------------------------
+
+## Jacobian settings
+## Note PerturbValue is a relative scalefactor and 
+## PerturbValueBCs is in ppb
+PerturbValue: 1.5
+PerturbValueBCs: 10.0
+
+## Apply scale factors from a previous inversion?
+UseEmisSF: false
+UseOHSF: false
+
+## Save out hourly diagnostics from GEOS-Chem?
+## For use in satellite operators via post-processing -- required for TROPOMI
+## inversions
+HourlyCH4: true
+
+## Turn on planeflight diagnostic in GEOS-Chem?
+## For use in comparing GEOS-Chem against planeflight data. The path
+## to those data must be specified in input.geos.
+PLANEFLIGHT: false
+
+## Turn on old observation operators in GEOS-Chem?
+## These will save out text files comparing GEOS-Chem to observations, but have
+## to be manually incorporated into the IMI
+GOSAT: false
+TCCON: false
+AIRS: false
+
+##------------------------------------------------------------------
+## Settings for running on local cluster
+##------------------------------------------------------------------
+
+## Path for IMI runs and output
+OutputPath: "/n/holyscratch01/jacob_lab/$USER"
+
+## Path to GEOS-Chem input data
+DataPath: "/n/holyscratch01/external_repos/GEOS-CHEM/gcgrid/gcdata/ExtData"
+
+## Path to TROPOMI Data
+## 1. "/n/holylfs05/LABS/jacob_lab/imi/ch4/tropomi"
+## 2. "/n/holylfs05/LABS/jacob_lab/imi/ch4/blended"
+DataPathTROPOMI: "/n/holylfs05/LABS/jacob_lab/imi/ch4/blended"
+
+## Environment files
+## See envs/README to create the Conda environment specified below
+#CondaEnv: "/n/home00/xlwang/software/Mambaforge/mambaforge/envs/imi_env"
+CondaEnv: "imi_env"
+GEOSChemEnv: "/n/home06/nbalasus/envs/gcclassic.rocky+gnu12.minimal.env"
+
+## Download initial restart file from AWS S3?
+##  NOTE: Must have AWS CLI enabled
+RestartDownload: false
+
+## Path to initial GEOS-Chem restart file + prefix
+##   ("YYYYMMDD_0000z.nc4" will be appended)
+RestartFilePrefix: "/n/holylfs05/LABS/jacob_lab/imi/ch4/blended-boundary-conditions/v2023-10/GEOSChem.BoundaryConditions."
+RestartFilePreviewPrefix: "/n/holylfs05/LABS/jacob_lab/imi/ch4/blended-boundary-conditions/v2023-10/GEOSChem.BoundaryConditions."
+
+## Path to GEOS-Chem boundary condition files (for nested grid simulations)
+## Must put backslash before $ in $YYYY$MM$DD to properly work in sed command
+## BCversion will be appended to the end of this path. ${BCpath}/${BCversion}
+#BCpath: "/n/holylfs05/LABS/jacob_lab/imi/ch4/tropomi-boundary-conditions"
+BCpath: "/n/holylfs05/LABS/jacob_lab/imi/ch4/blended-boundary-conditions"
+BCversion: "v2023-10"
+
+## Options to download missing GEOS-Chem input data from AWS S3
+##  NOTE: Must have AWS CLI enabled
+PreviewDryRun: false
+SpinupDryrun: false
+ProductionDryRun: false
+PosteriorDryRun: false
+BCdryrun: false

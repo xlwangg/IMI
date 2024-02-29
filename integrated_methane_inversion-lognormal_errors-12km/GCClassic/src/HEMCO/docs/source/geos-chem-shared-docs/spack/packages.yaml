@@ -1,0 +1,79 @@
+# DESCRIPTION   This file has recommended package settings for
+#               GEOS-Chem/GCHP/HEMCO dependencies. It is meant to be
+#               as a custom scope for spack.
+#
+# HOW TO UPGRADE
+#   1. Update package.<package-name>.version to the appropriate version number
+#   2. Check for changes to the variants by running
+#      `spack info <package-name>@<version>`. Only the
+#      required extensions should be enabled.
+#   3. Verify install spec with updated geoschem-deps/package.yaml by running 
+#        spack -C ${model}/spack spec -I esmf^gcc^openmpi
+#      where ${model} is one of "GCClassic", "GCHP", "HEMCO".
+#      Check for duplicate installs (same package different hash)
+#      and unnecessary dependencies.
+
+packages:
+  #
+  # Preferred compiler
+  #
+  gcc:
+    version: [10.2.0]
+    variants: ^texinfo
+  #
+  # Core GEOS-Chem/GCHP/HEMCO dependencies
+  #
+  cmake:
+    version: [3.22.2]
+    variants: ~doc~ncurses+openssl+ownlibs~qt
+    compiler: [gcc@10.2.0]
+  esmf:
+    version: [8.1.1]
+    variants: ~pio~pnetcdf~xerces
+    compiler: [gcc@10.2.0]    
+  hdf5:
+    version: [1.14.0]
+    variants: ~doc~mpi+hl+pic+shared+threadsafe
+    compiler: [gcc@10.2.0]
+  netcdf-c:
+    version: [4.8.1]
+    variants: ^hdf5~doc~mpi+hl+pic+shared+threadsafe~dap~fsync~hdf4~jna~parallel-netcdf
+    compiler: [gcc@10.2.0]    
+  netcdf-fortran:
+    version: [4.5.3]
+    variants: ~doc+pic+shared
+    compiler: [gcc@10.2.0]    
+  openmpi:
+    version: [4.1.0]
+    variants: ~doc+auto+pmi
+    compiler: [gcc@10.2.0]    
+  #
+  # Useful tools
+  #
+  cdo:
+    version: [2.1.1]
+    variants: ^hdf5~doc~mpi+hl+pic+shared+threadsafe
+    compiler: [gcc@10.2.0]
+  cgdb:
+    version: [0.7.1]
+    compiler: [gcc@10.2.0]
+  environment-modules:
+    version: [5.0.1]
+    compiler: [gcc@10.2.0]
+  flex:
+    compiler: [gcc@10.2.0]    
+  gdb:
+    version: [9.2]
+    variants: ~python~xz
+    compiler: [gcc@10.2.0]
+  nco:
+    version: [5.1.4]
+    variants: ^hdf5~doc~mpi+hl+pic+shared+threadsafe
+    compiler: [gcc@10.2.0]
+  #
+  # Settings for all Spack-built packages
+  #
+  all:
+    target: [x86_64]
+    providers:
+      mpi: [openmpi]
