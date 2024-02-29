@@ -224,12 +224,18 @@ def get_max_aggregation_level(config, sensitivities, desired_element_num):
         desired_element_num   int : desired number of state vector elements
     Returns:                  int : max gridcells per cluster
     """
-    if config["Res"] == "0.25x0.3125":
+    if config["Res"] == "0.125x0.15625":
+        max_aggregation_level = 512
+    elif config["Res"] == "0.25x0.3125":
         max_aggregation_level = 256
     elif config["Res"] == "0.5x0.625":
         max_aggregation_level = 64
+    elif config["Res"] == "2.0x2.5":
+        max_aggregation_level = 4
+    elif config["Res"] == "4.0x5.0":
+        max_aggregation_level = 1
 
-    background_elements_needed = np.ceil(len(sensitivities) / max_aggregation_level)
+    background_elements_needed = np.ceil(len(sensitivities) / max_aggregation_level)# 1-month: 10800/4 = 2700 > 600
     if background_elements_needed > desired_element_num:
         print(
             "Warning: too few clusters to create a background of 4x5 degree state vector elements."
@@ -238,7 +244,7 @@ def get_max_aggregation_level(config, sensitivities, desired_element_num):
         # if there are too few clusters then we set the max aggregation level
         # to either total_native_elements/8 or total_native_elements
         denominator = 8 if desired_element_num > 8 else 1
-        max_aggregation_level = np.ceil(len(sensitivities) / denominator)
+        max_aggregation_level = np.ceil(len(sensitivities) / denominator).astype(int)
         print(
             f"Max aggregation level set to: {max_aggregation_level} elements in a cluster"
         )
@@ -322,15 +328,21 @@ def force_native_res_pixels(config, clusters, sensitivities):
         )
         return sensitivities
 
-    if config["Res"] == "0.25x0.3125":
+    if config["Res"] == "0.125x0.15625":
+        lat_step = 0.125
+        lon_step = 0.15625
+    elif config["Res"] == "0.25x0.3125":
         lat_step = 0.25
         lon_step = 0.3125
     elif config["Res"] == "0.5x0.625":
         lat_step = 0.5
         lon_step = 0.625
-    elif config["Res"] == "0.125x0.15625":
-        lat_step = 0.125
-        lon_step = 0.15625
+    elif config["Res"] == "2.0x2.5":
+        lat_step = 2.0
+        lon_step = 2.5
+    elif config["Res"] == "4.0x5.0":
+        lat_step = 4.0
+        lon_step = 5.0
 
     for lat, lon in coords:
         lon = np.floor(lon / lon_step) * lon_step

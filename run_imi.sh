@@ -4,7 +4,6 @@
 #SBATCH -n 1
 #SBATCH -o "imi_output.log"
 
-
 # This script will run the Integrated Methane Inversion (IMI) with GEOS-Chem.
 # For documentation, see https://imi.readthedocs.io.
 #
@@ -16,7 +15,8 @@
 source src/utilities/common.sh
 source src/components/setup_component/setup.sh
 source src/components/template_component/template.sh
-source src/components/statevector_component/statevector.sh
+source src/components/statevector_component/statevector.
+source src/components/prior_component/prior.sh
 source src/components/preview_component/preview.sh
 source src/components/spinup_component/spinup.sh
 source src/components/jacobian_component/jacobian.sh
@@ -52,6 +52,17 @@ if ! "$isAWS"; then
     printf "\nActivating conda environment: ${CondaEnv}\n"
     eval "$(conda shell.bash hook)"
     conda activate $CondaEnv
+
+    # Load environment for compiling and running GEOS-Chem
+    if [ ! -f "${GEOSChemEnv}" ]; then
+    printf "\nGEOS-Chem environment file ${GEOSChemEnv} does not exist!"
+    printf "\nIMI $RunName Aborted\n"
+    exit 1
+    else
+    printf "\nLoading GEOS-Chem environment: ${GEOSChemEnv}\n"
+        source ${GEOSChemEnv}
+    fi
+    
 fi
 
 # Check all necessary config variables are present

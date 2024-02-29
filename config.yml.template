@@ -16,19 +16,10 @@ SpinupMonths: 1
 ## Use blended TROPOMI+GOSAT data (true)? Or use operational TROPOMI data (false)?
 BlendedTROPOMI: true
 
-## Region of interest
-##   These lat/lon bounds are only used if CreateAutomaticRectilinearStateVectorFile: true
-##   Otherwise lat/lon bounds are determined from StateVectorFile
-LonMin: -105
-LonMax: -103
-LatMin: 31
-LatMax: 33
+## Is this a regional inversion? Set to false for global inversion
+isRegional: true
 
-## Use nested grid simulation?
-##   Must be "true" for IMI regional inversions
-NestedGrid: true
-
-## Select nested grid region (for using pre-cropped meteorological fields)
+## Select two character region ID (for using pre-cropped meteorological fields)
 ##   Current options are listed below with ([lat],[lon]) bounds:
 ##     "AF" : Africa ([-37,40], [-20,53])
 ##     "AS" : Asia ([-11,55],[60,150]) 
@@ -38,9 +29,17 @@ NestedGrid: true
 ##     "OC" : Oceania ([-50,5], [110,180])
 ##     "RU" : Russia ([41,83], [19,180])
 ##     "SA" : South America ([-59,16], [-88,-31])
-##     ""   : Use for global met fields (global simulation/custom nested grids)
+##     ""   : Use for global global simulation or custom regions
 ##   For example, if the region of interest is in Europe ([33,61],[-30,70]), select "EU".
-NestedRegion: "NA"
+RegionID: "NA"
+
+## Region of interest
+##   These lat/lon bounds are only used if CreateAutomaticRectilinearStateVectorFile: true
+##   Otherwise lat/lon bounds are determined from StateVectorFile
+LonMin: -105
+LonMax: -103
+LatMin: 31
+LatMax: 33
 
 ## Kalman filter options
 KalmanMode: false
@@ -85,13 +84,17 @@ PrecomputedJacobian: false
 ReferenceRunDir: "/n/home00/xlwang/xlwang/Test_Permian_lognormal"
 
 ## Grid
-##   Select "0.25x0.3125" and "geosfp", or "0.5x0.625" and "merra2"
+##   Options are 0.25x0.3125 (GEOSFP only), 0.5x0.625, 2.0x2.5, or 4.0x5.0
 ##   Add options for "0.125x0.15625" for "geosfp" (xlwang, 2023)
 Res: "0.125x0.15625"
-Met: "geosfp"
+
+## Meteorology
+##   Options are GEOSFP or MERRA2
+Met: "GEOSFP"
 
 ## Setup modules
 ##   Turn on/off different steps in setting up the inversion 
+RunSetup: true
 SetupTemplateRundir: false
 SetupSpinupRun: false
 SetupJacobianRuns: false
@@ -100,25 +103,35 @@ SetupPosteriorRun: false
 
 ## Run modules
 ##   Turn on/off different steps in performing the inversion
-RunSetup: false
+DoPriorEmis: true
 DoSpinup: false
 DoJacobian: false
 DoInversion: false
 DoPosterior: false
 
 ## IMI preview
+##   NOTE: RunSetup must be true to run preview
 DoPreview: false
 DOFSThreshold: 0
 
-## resource allocation settings for slurm jobs
+## Resource allocation settings for slurm jobs
+PriorMemory: 50000
 SimulationCPUs: 32
 SimulationMemory: 100000
 JacobianCPUs: 1
 JacobianMemory: 100000
-RequestedTime: "3-00:00"
+RequestedTime: "2-00:00"
 SchedulerPartition: "sapphire,huce_cascade,huce_intel,seas_compute,shared"
 #sapphire,huce_cascade,huce_intel,seas_compute,shared
-#
+
+## Options to speed up the IMI
+UseTotalPriorEmis: true
+CombineJacobianRuns: true
+NumJacobianRuns: 4
+
+## Max number of simultaneous Jacobian runs from the job array (-1: no limit)
+MaxSimultaneousRuns: -1
+
 ##--------------------------------------------------------------------
 ## Additional settings for GEOS-Chem simulations
 ##--------------------------------------------------------------------
@@ -165,10 +178,13 @@ DataPath: "/n/holyscratch01/external_repos/GEOS-CHEM/gcgrid/gcdata/ExtData"
 ## 2. "/n/holylfs05/LABS/jacob_lab/imi/ch4/blended"
 DataPathTROPOMI: "/n/holylfs05/LABS/jacob_lab/imi/ch4/blended"
 
-## Environment files
+## Conda environment file
 ## See envs/README to create the Conda environment specified below
 #CondaEnv: "/n/home00/xlwang/software/Mambaforge/mambaforge/envs/imi_env"
 CondaEnv: "imi_env"
+
+## GEOS-Chem environment file (with fortran compiler, netcdf libraries, etc.)
+##   NOTE: Copy your own file in the envs/ directory within the IMI
 GEOSChemEnv: "/n/home06/nbalasus/envs/gcclassic.rocky+gnu12.minimal.env"
 
 ## Download initial restart file from AWS S3?
@@ -182,8 +198,7 @@ RestartDownload: false
 RestartFilePrefix: "/n/holyscratch01/jacob_lab/lestrada/IMI/BCs/v2024-01-temp-generation/IMI_BCs_14.2.3_v2024-01-temp/blended-boundary-conditions/v2024-01-temp/GEOSChem.BoundaryConditions."
 RestartFilePreviewPrefix: "/n/holyscratch01/jacob_lab/lestrada/IMI/BCs/v2024-01-temp-generation/IMI_BCs_14.2.3_v2024-01-temp/blended-boundary-conditions/v2024-01-temp/GEOSChem.BoundaryConditions."
 
-## Path to GEOS-Chem boundary condition files (for nested grid simulations)
-## Must put backslash before $ in $YYYY$MM$DD to properly work in sed command
+## Path to GEOS-Chem boundary condition files (for regional simulations)
 ## BCversion will be appended to the end of this path. ${BCpath}/${BCversion}
 #BCpath: "/n/holylfs05/LABS/jacob_lab/imi/ch4/tropomi-boundary-conditions"
 #BCpath: "/n/holylfs05/LABS/jacob_lab/imi/ch4/blended-boundary-conditions"

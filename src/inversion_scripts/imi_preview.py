@@ -170,6 +170,11 @@ def imi_preview(
         res_factor = 0.5
     elif config["Res"] == "0.125x0.15625":
         res_factor = 2
+    elif config["Res"] == "2.0x2.5":
+        res_factor = 0.125
+    elif config["Res"] == "4.0x5.0":
+        res_factor = 0.0625
+
     additional_storage_cost = ((num_days / 31) - 1) * reference_storage_cost
     expected_cost = (
         (reference_cost + additional_storage_cost)
@@ -487,7 +492,8 @@ def estimate_averaging_kernel(
     df["swir_albedo"] = albedo
     df["xch4"] = xch4
 
-    # set resolution specific variables
+    # Set resolution specific variables
+    # L_native = Rough length scale of native state vector element [m]
     if config["Res"] == "0.25x0.3125":
         L_native = 25 * 1000  # Rough length scale of native state vector element [m]
         lat_step = 0.25
@@ -500,7 +506,15 @@ def estimate_averaging_kernel(
         lat_step = 0.125
         lon_step = 0.15625
         L_native = 12 * 1000  # Rough length scale of native state vector element [m]        
-
+    elif config["Res"] == "2.0x2.5":
+        L_native = 200 * 1000
+        lat_step = 2.0
+        lon_step = 2.5
+    elif config["Res"] == "4.0x5.0":
+        L_native = 400 * 1000
+        lat_step = 4.0
+        lon_step = 5.0
+        
     # bin observations into gridcells and map onto statevector
     observation_counts = add_observation_counts(df, state_vector, lat_step, lon_step)
 
