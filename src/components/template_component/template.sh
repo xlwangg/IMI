@@ -46,7 +46,7 @@ setup_template() {
     elif [ "$Res" == "0.25x0.3125" ]; then
         cmd="3\n${metNum}\n4\n1\n2\n${RunDirs}\n${runDir}\nn\n" #global run
         #cmd="3\n2\n4\n4\n2\n${RunDirs}\n${runDir}\nn\n" #regional run
-    elif [ "$Res" = "0.125x0.15625" ]; then
+    elif [ "$Res" == "0.125x0.15625" ]; then
         cmd="3\n${metNum}\n5\n4\n2\n${RunDirs}\n${runDir}\nn\n" #regional run
     else
         printf "\nERROR: Grid resolution ${Res} is not supported by the IMI. "
