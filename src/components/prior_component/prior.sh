@@ -24,26 +24,28 @@ run_prior() {
     # Commands to feed to createRunDir.sh
     # HEMCO standalone run directories are created for the global domain by default
     if [[ "$Met" == "MERRA2" || "$Met" == "MERRA-2" || "$Met" == "merra2" ]]; then
-	metNum="1"
+	   metNum="1"
     elif [[ "$Met" == "GEOSFP" || "$Met" == "GEOS-FP" || "$Met" == "geosfp" ]]; then
-	metNum="2"
+	   metNum="2"
     else
-	printf "\nERROR: Meteorology field ${Met} is not supported by the IMI. "
-	printf "\n Options are GEOSFP or MERRA2.\n"
-	exit 1
+	   printf "\nERROR: Meteorology field ${Met} is not supported by the IMI. "
+	   printf "\n Options are GEOSFP or MERRA2.\n"
+	   exit 1
     fi	
     if [ "$Res" = "4.0x5.0" ]; then
-	resnum="1"
+	   resnum="1"
     elif [ "$Res" == "2.0x2.5" ]; then
-	resnum="2"
+	   resnum="2"
     elif [ "$Res" == "0.5x0.625" ]; then
-	resnum="3"
+	   resnum="3"
     elif [ "$Res" == "0.25x0.3125" ]; then
-	resnum="4"
+	   resnum="4"
+    elif [ "$Res" == "0.125x0.15625" ]; then
+       resnum="4"
     else
-	printf "\nERROR: Grid resolution ${Res} is not supported by the IMI. "
-	printf "\n Options are 0.25x0.3125, 0.5x0.625, 2.0x2.5, or 4.0x5.0.\n"
-	exit 1
+	   printf "\nERROR: Grid resolution ${Res} is not supported by the IMI. "
+	   printf "\n Options are 0.125x0.15625, 0.25x0.3125, 0.5x0.625, 2.0x2.5, or 4.0x5.0.\n"
+	   exit 1
     fi
     HEMCOconfig=${RunTemplate}/HEMCO_Config.rc
     
