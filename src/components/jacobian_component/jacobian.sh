@@ -27,11 +27,15 @@ setup_jacobian() {
              printf "\nERROR: UseTotalPriorEmis must be true when using CombineJacobianRuns. Please check config.yml.\n"
         exit 9999
         fi
-
-        nRuns=$NumJacobianRuns
-
+ 
         # Determine approx. number of CH4 tracers per Jacobian run
-        nTracers=$((nElements/NumJacobianRuns))
+        if "$OptimizeBCs"; then
+           nTracers=$(((nElements-4)/NumJacobianRuns)) 
+           nRuns=$((NumJacobianRuns+4))
+        else
+           nTracers=$((nElements/NumJacobianRuns)) 
+           nRuns=$NumJacobianRuns
+        fi    
         printf "\n - CombineJacobianRuns activated -\n"
         printf "\nGenerating $NumJacobianRuns run directories with approx. $nTracers CH4 tracers (reperesenting state vector elements) per run\n"
     else
@@ -43,7 +47,7 @@ setup_jacobian() {
     sed -i -e "s:{RunName}:${RunName}:g" \
            -e "s:{InversionPath}:${InversionPath}:g" jacobian_runs/run_jacobian_simulations.sh
     cp ${InversionPath}/src/geoschem_run_scripts/submit_jacobian_simulations_array.sh jacobian_runs/
-    sed -i -e "s:{START}:0:g" \
+    sed -i -e "s:{START}:1:g" \
            -e "s:{END}:${nRuns}:g" \
            -e "s:{InversionPath}:${InversionPath}:g" jacobian_runs/submit_jacobian_simulations_array.sh
     if [ $MaxSimultaneousRuns -gt 0 ]; then
@@ -152,7 +156,7 @@ create_simulation_dir() {
 
     # BC optimization setup
     if "$OptimizeBCs"; then
-        bcThreshold=$(($nElements - 4))
+        bcThreshold=$(($nRuns - 4))
         # The last four state vector elements are reserved for BC optimization of NSEW
         # domain edges. If the current state vector element is one of these, then
         # turn on BC optimization for the corresponding edge and revert emission perturbation
@@ -163,6 +167,8 @@ create_simulation_dir() {
                 -e "s|emission_perturbation: ${PerturbValue}|emission_perturbation: 1.0|g" \
                 -e "s|state_vector_element_number: ${xUSE}|state_vector_element_number: 0|g" geoschem_config.yml
         fi
+    else
+        bcThreshold=$nRuns
     fi 
 
 	# Update settings in HISTORY.rc
@@ -182,7 +188,11 @@ create_simulation_dir() {
         fi
     fi
 
-    if "$CombineJacobianRuns"; then
+    if [ "$CombineJacobianRuns" ] && [ $x -le $bcThreshold ]; then
+
+        # Creat directory for perturbations
+        PertDir="./Perturbations"
+        mkdir -p -v ${PertDir}
 
         # Determine start and end element numbers for this run directory
         if [ $x -eq 0 ]; then
@@ -190,20 +200,26 @@ create_simulation_dir() {
         else
             start=$(( (x-1) * nTracers + (x-1) ))
         fi
-        if [ $x -eq $nRuns ]; then
-            end=$nElements
+        if [ $x -eq $bcThreshold ]; then
+            if "$OptimizeBCs"; then
+               end=$((nElements - 4))
+            else   
+               end=$nElements
+            fi   
         else
             end=$(( start + nTracers ))
         fi
 
         # Modify restart file entry in HEMCO_Config.rc
-        sed -i -e "s/SPC_/SPC_CH4/g"  -e "s/?ALL?/CH4/g" -e "s/EFYO xyz 1 \*/EFYO xyz 1 CH4/g" HEMCO_Config.rc
+        sed -i -e "s/* SPC_/* SPC_CH4/g"  -e "s/?ALL?/CH4/g" -e "s/EFYO xyz 1 \*/EFYO xyz 1 CH4/g" HEMCO_Config.rc
+        sed -i -e "s/* BC_/* BC_CH4/g"    -e "s/?ADV?/CH4/g" -e "s/EFY xyz 1 \*/EFY xyz 1 CH4/g" HEMCO_Config.rc
 
         # Initialize previous lines to search
         GcPrevLine='- CH4'
         HcoPrevLine1='EFYO xyz 1 CH4 - 1 '
-        HcoPrevLine2='CH4 - 1 500'
-        HcoPrevLine3='Perturbations.txt - - - xy count 1'
+        HcoPrevLine2='EFY xyz 1 CH4 - 1 '
+        HcoPrevLine3='CH4 - 1 500'
+        HcoPrevLine4='Perturbations.txt - - - xy count 1'
         PertPrevLine='DEFAULT    0     1.0'
 
         # Loop over element numbers for this run and add as CH4 tracers in
@@ -212,9 +228,9 @@ create_simulation_dir() {
 
             if [ $i -lt 10 ]; then
                 istr="000${i}"
-            elif [ $x -lt 100 ]; then
+            elif [ $i -lt 100 ]; then
                 istr="00${i}"
-            elif [ $x -lt 1000 ]; then
+            elif [ $i -lt 1000 ]; then
                 istr="0${i}"
             else
                 istr="${i}"
@@ -223,6 +239,7 @@ create_simulation_dir() {
             # Start HEMCO scale factor ID at 2000 to avoid conflicts with
             # preexisting scale factors/masks
             SFnum=$((2000 + i))
+            maskID=$i
 
             # Add lines to geoschem_config.yml
             # Spacing in GcNewLine is intentional
@@ -238,20 +255,32 @@ create_simulation_dir() {
             # Add lines to HEMCO_Config.yml
             HcoNewLine1='\* SPC_CH4_'$istr' - - - - - - CH4_'$istr' - 1 1'
             sed -i -e "/$HcoPrevLine1/a $HcoNewLine1" HEMCO_Config.rc
-            HcoPrevLine1='CH4_'$istr' - 1 1'
+            HcoPrevLine1='\* SPC_CH4_'$istr' - - - - - - CH4_'$istr' - 1 1'
 
-            HcoNewLine2='\0 CH4_Emis_Prior_'$istr' - - - - - - CH4_'$istr' '$SFnum' 1 500'
-            sed -i "/$HcoPrevLine2/a $HcoNewLine2" HEMCO_Config.rc
-            HcoPrevLine2='CH4_'$istr' '$SFnum' 1 500'
+            # Add lines to HEMCO_Config.yml
+            HcoNewLine2='\* BC_CH4_'$istr' - - - - - - CH4_'$istr' - 1 1'
+            sed -i -e "/$HcoPrevLine2/a $HcoNewLine2" HEMCO_Config.rc
+            HcoPrevLine2='\* BC_CH4_'$istr' - - - - - - CH4_'$istr' - 1 1'
 
-            HcoNewLine3='\'$SFnum' SCALE_ELEM_'$istr' Perturbations.txt - - - xy count 1'
+            HcoNewLine3='\0 CH4_Emis_Prior_'$istr' - - - - - - CH4_'$istr' '$SFnum' 1 500'
             sed -i "/$HcoPrevLine3/a $HcoNewLine3" HEMCO_Config.rc
-            HcoPrevLine3='SCALE_ELEM_'$istr' Perturbations.txt - - - xy count 1'
+            HcoPrevLine3='CH4_'$istr' '$SFnum' 1 500'
+
+            # HcoNewLine4='\'$SFnum' SCALE_ELEM_'$istr' Perturbations.txt - - - xy count 1'
+            # sed -i "/$HcoPrevLine4/a $HcoNewLine4" HEMCO_Config.rc
+            # HcoPrevLine4='SCALE_ELEM_'$istr' Perturbations.txt - - - xy count 1'
+
+            HcoNewLine4="${SFnum} SCALE_ELEM_${istr} ./Perturbations/Perturb_${istr}.txt - - - xy count 1"
+            sed -i "/$HcoPrevLine4/a $HcoNewLine4" HEMCO_Config.rc
+            HcoPrevLine4="Perturb_${istr}.txt - - - xy count 1"
+
+            # Creat perturbation files
+            cp ./Perturbations.txt ./Perturbations/Perturb_${istr}.txt
 
             # Add lines to Perturbations.txt
-            PertNewLine='\ELEM_'$istr'  '$SFnum'  1.5'
-            sed -i "/$PertPrevLine/a $PertNewLine" Perturbations.txt
-            PertPrevLine='ELEM_'$istr'  '$SFnum'  1.5'
+            PertNewLine='\ELEM_'$istr'  '$maskID'  1.5'
+            sed -i "/$PertPrevLine/a $PertNewLine" "./Perturbations/Perturb_${istr}.txt"
+            # PertPrevLine='ELEM_'$istr'  '$maskID'  1.5'
 
         done
 

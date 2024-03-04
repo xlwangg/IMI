@@ -93,6 +93,9 @@ run_spinup() {
         source ${GEOSChemEnv}
     fi
 
+    # Define the run directory name
+    SpinupName="${RunName}_Spinup"
+    
     # Submit job to job scheduler
     sbatch --mem $SimulationMemory \
     -c $SimulationCPUs \

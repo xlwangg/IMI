@@ -56,6 +56,7 @@ config_required = [
     "SetupInversion",
     "SetupPosteriorRun",
     "RunSetup",
+    "DoPriorEmis",
     "DoSpinup",
     "DoJacobian",
     "DoInversion",

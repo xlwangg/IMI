@@ -117,7 +117,7 @@ setup_template() {
         if [ "$Res" = "0.125x0.15625" ]; then
             sed -i -e "s:GEOS_0.25x0.3125\/GEOS_FP:GEOS_0.25x0.3125_NA\/GEOS_FP:g" HEMCO_Config.rc.gmao_metfields_0125
             OLD="/n/holyscratch01/external_repos/GEOS-CHEM/gcgrid/gcdata/ExtData/GEOS_0.125x0.15625/GEOS_FP"
-            NEW="/n/home00/xlwang/xlwang/methane_inversion/InputData/GEOS_0.125x0.15625_NA/GEOS_FP_DerivedWinds"
+            NEW="/n/holylfs05/LABS/jacob_lab/Users/xlwang/methane_inversion/InputData/GEOS_0.125x0.15625_NA/GEOS_FP_DerivedWinds"
             sed -i "s|$OLD|$NEW|g" HEMCO_Config.rc.gmao_metfields_0125
             sed -i '/METDIR/d' HEMCO_Config.rc
         else  
