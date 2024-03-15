@@ -188,7 +188,7 @@ create_simulation_dir() {
         fi
     fi
 
-    if [ "$CombineJacobianRuns" ] && [ $x -le $bcThreshold ]; then
+    if "$CombineJacobianRuns" && [ $x -le $bcThreshold ]; then
 
         # Creat directory for perturbations
         PertDir="./Perturbations"
