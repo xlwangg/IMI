@@ -47,7 +47,7 @@ setup_jacobian() {
     sed -i -e "s:{RunName}:${RunName}:g" \
            -e "s:{InversionPath}:${InversionPath}:g" jacobian_runs/run_jacobian_simulations.sh
     cp ${InversionPath}/src/geoschem_run_scripts/submit_jacobian_simulations_array.sh jacobian_runs/
-    sed -i -e "s:{START}:1:g" \
+    sed -i -e "s:{START}:0:g" \
            -e "s:{END}:${nRuns}:g" \
            -e "s:{InversionPath}:${InversionPath}:g" jacobian_runs/submit_jacobian_simulations_array.sh
     if [ $MaxSimultaneousRuns -gt 0 ]; then
@@ -81,11 +81,11 @@ setup_jacobian() {
     fi
 
     # Initialize (x=0 is base run, i.e. no perturbation; x=1 is state vector element=1; etc.)
-    if "$CombineJacobianRuns"; then
-        x=1
-    else
-        x=0
-    fi
+    # if "$CombineJacobianRuns"; then
+    #     x=1
+    # else
+    x=0
+    # fi
 
     # Create run directory for each state vector element so we can
     # apply the perturbation to each
@@ -196,18 +196,18 @@ create_simulation_dir() {
 
         # Determine start and end element numbers for this run directory
         if [ $x -eq 0 ]; then
-            start=1
-        else
-            start=$(( (x-1) * nTracers + (x-1) ))
-        fi
-        if [ $x -eq $bcThreshold ]; then
+            start=0
+            end=0
+        elif [ $x -eq $bcThreshold ]; then
+            start=$(( (x-1) * nTracers + 1 ))
             if "$OptimizeBCs"; then
                end=$((nElements - 4))
             else   
                end=$nElements
-            fi   
+            fi              
         else
-            end=$(( start + nTracers ))
+            start=$(( (x-1) * nTracers + 1 ))
+            end=$(( start + nTracers - 1 ))
         fi
 
         # Modify restart file entry in HEMCO_Config.rc

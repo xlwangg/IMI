@@ -44,7 +44,7 @@ def setup_gc_cache(startday, endday, gc_source_path, gc_destination_path):
         for h in hours:
 
             # Select data for that hour
-            SpeciesConc_for_hour = SpeciesConc_data.isel(time=slice(h, h + 1, 1))
+            SpeciesConc_for_hour = SpeciesConc_data['SpeciesConcVV_CH4'].isel(time=slice(h, h + 1, 1))
             LevelEdgeDiags_for_hour = LevelEdgeDiags_data.isel(time=slice(h, h + 1, 1))
 
             # Save to new .nc4 file at destination
@@ -52,7 +52,7 @@ def setup_gc_cache(startday, endday, gc_source_path, gc_destination_path):
             LevelEdgeDiags_save_pth = f"{gc_destination_path}/GEOSChem.LevelEdgeDiags.{d}_{zero_pad_num_hour(h)}00z.nc4"
             SpeciesConc_for_hour.to_netcdf(
                 SpeciesConc_save_pth,
-                encoding={v: {"zlib": True, "complevel": 9} for v in SpeciesConc_for_hour.data_vars},
+                encoding={"SpeciesConcVV_CH4": {"zlib": True, "complevel": 9}}
             )
             LevelEdgeDiags_for_hour.to_netcdf(
                 LevelEdgeDiags_save_pth,

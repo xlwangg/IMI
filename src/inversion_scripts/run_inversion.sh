@@ -50,6 +50,26 @@ tropomiCache="${OutputPath}/${RunName}/data_TROPOMI"
 # Switch is flipped to false automatically if (( period_i > 1 ))
 FirstSimSwitch=$1
 
+if "$CombineJacobianRuns"; then
+    if ! "$UseTotalPriorEmis"; then
+         printf "\nERROR: UseTotalPriorEmis must be true when using CombineJacobianRuns. Please check config.yml.\n"
+    exit 9999
+    fi
+
+    # Determine approx. number of CH4 tracers per Jacobian run
+    if "$OptimizeBCs"; then
+       nTracers=$(((nElements-4)/NumJacobianRuns)) 
+       nRuns=$((NumJacobianRuns+4))
+    else
+       nTracers=$((nElements/NumJacobianRuns)) 
+       nRuns=$NumJacobianRuns
+    fi    
+    printf "\n - CombineJacobianRuns activated -\n"
+    printf "\nGenerating $NumJacobianRuns run directories with approx. $nTracers CH4 tracers (reperesenting state vector elements) per run\n"
+else
+    nRuns=$nElements
+fi
+
 printf "\n=== EXECUTING RUN_INVERSION.SH ===\n"
     
 #=======================================================================
@@ -104,7 +124,7 @@ printf "DONE -- postproc_diags.py\n\n"
 #=======================================================================
 
 if ! "$PrecomputedJacobian"; then
-    python_args=(calc_sensi.py $nElements $PerturbValue $StartDate $EndDate $JacobianRunsDir $RunName $sensiCache)
+    python_args=(calc_sensi.py $nElements $nRuns $PerturbValue $StartDate $EndDate $JacobianRunsDir $RunName $sensiCache)
     # add an argument to calc_sensi.py if optimizing BCs
     if "$OptimizeBCs"; then
         python_args+=($PerturbValueBCs)

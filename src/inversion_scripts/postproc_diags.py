@@ -71,6 +71,17 @@ def fill_missing_hour(run_name, run_dirs_pth, prev_run_pth, start_day, res):
             output_file_LE = f"{run_dirs_pth}/{r}/OutputDir/GEOSChem.LevelEdgeDiags.{start_day}_{timestamp}z.nc4"
             output_data_LE = xr.load_dataset(output_file_LE)
 
+        # If UseTotalPriorEmis is true, variable_names = ['SpeciesConcVV_CH4_0001','SpeciesConcVV_CH4_0002',...]
+        # Otherwise, variable_names = []
+        variable_names = [key for key in output_data_SC.keys() if key.startswith('SpeciesConcMND_CH4_')]
+        if len(variable_names) > 0:
+            for varname in variable_names:
+                prev_data_SC[varname] = prev_data_SC['SpeciesConcMND_CH4'].copy()
+
+            variable_names = [key for key in output_data_SC.keys() if key.startswith('SpeciesConcVV_CH4_')]
+            for varname in variable_names:
+                prev_data_SC[varname] = prev_data_SC['SpeciesConcVV_CH4'].copy()
+        
         # Merge output and copied datasets and replace original files that were missing the first hour
         merged_data_SC = xr.merge([output_data_SC, prev_data_SC])
         final_file_SC = (

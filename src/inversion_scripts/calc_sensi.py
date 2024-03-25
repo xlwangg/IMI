@@ -3,7 +3,7 @@ import xarray as xr
 import datetime
 from joblib import Parallel, delayed
 from src.inversion_scripts.utils import zero_pad_num_hour
-
+import dask
 
 def zero_pad_num(n):
     nstr = str(n)
@@ -37,7 +37,7 @@ def test_GC_output_for_BC_perturbations(e, nelements, sensitivities):
     assert abs(check - 1e-9) < 1e-11, f"GC CH4 perturb not working... perturbation is off by {abs(check - 1e-9)} mol/mol/ppb"
 
 def calc_sensi(
-    nelements, perturbation, startday, endday, run_dirs_pth, run_name, sensi_save_pth, perturbationBC
+    nelements, nruns, perturbation, startday, endday, run_dirs_pth, run_name, sensi_save_pth, perturbationBC
 ):
     """
     Loops over output data from GEOS-Chem perturbation simulations to compute sensitivities
@@ -99,6 +99,7 @@ def calc_sensi(
     # Loop over model data to get sensitivities
     hours = range(24)
     elements = range(nelements)
+    runs = range(nruns)
 
     # For each day
     for d in days:
@@ -115,7 +116,7 @@ def calc_sensi(
         # Save this data into numpy array so we don't need to read files in loop
         pert_datas = []
          # For each state vector element
-        for e in elements:
+        for e in runs:
             # State vector elements are numbered 1..nelements
             elem = zero_pad_num(e + 1)
             # Load the SpeciesConc file for the current element and day
@@ -123,8 +124,21 @@ def calc_sensi(
                 f"{run_dirs_pth}/{run_name}_{elem}/OutputDir/GEOSChem.SpeciesConc.{d}_0000z.nc4",
                 chunks='auto'
             )
+
+            # get variable names
+            variables = pert_data.variables
+            SpeciesConcVV_vars = [var for var in variables if var.startswith('SpeciesConcVV_')]
+            pert_data = pert_data[SpeciesConcVV_vars]
+
+            # the last 4 elements is for BC perturbations
+            if (perturbationBC is not None) and (e >= (nruns-4)):
+                elem = zero_pad_num( nelements-(nruns-e)+1 )
+                pert_data = pert_data.rename({'SpeciesConcVV_CH4': f"SpeciesConcVV_CH4_{elem}"})
+
             pert_datas.append(pert_data)
             pert_data.close()
+
+        pert_datas = xr.merge(pert_datas)
 
         # For each hour
         def process(h):
@@ -135,8 +149,9 @@ def calc_sensi(
             sensi.fill(np.nan)
             # For each state vector element
             for e in elements:
+                elem = zero_pad_num(e + 1)
                 # Get the data for the current hour
-                pert = pert_data["SpeciesConcVV_CH4"][h, :, :, :]
+                pert = pert_datas[f"SpeciesConcVV_CH4_{elem}"][h, :, :, :]
                 # Compute and store the sensitivities
                 if (perturbationBC is not None) and (e >= (nelements-4)):
                     sensitivities = (pert.values - base.values) / perturbationBC
@@ -171,16 +186,18 @@ if __name__ == "__main__":
     import sys
 
     nelements = int(sys.argv[1])
-    perturbation = float(sys.argv[2])
-    startday = sys.argv[3]
-    endday = sys.argv[4]
-    run_dirs_pth = sys.argv[5]
-    run_name = sys.argv[6]
-    sensi_save_pth = sys.argv[7]
-    perturbationBC = float(sys.argv[8]) if len(sys.argv) > 8 else None
+    nruns  = int(sys.argv[2])
+    perturbation = float(sys.argv[3])
+    startday = sys.argv[4]
+    endday = sys.argv[5]
+    run_dirs_pth = sys.argv[6]
+    run_name = sys.argv[7]
+    sensi_save_pth = sys.argv[8]
+    perturbationBC = float(sys.argv[9]) if len(sys.argv) > 9 else None
 
     calc_sensi(
         nelements,
+        nruns,
         perturbation,
         startday,
         endday,
