@@ -47,8 +47,8 @@ setup_posterior() {
     fi
     
     # Update settings in geoschem_config.yml
-    sed -i "/analytical_inversion/{N;s/activate: true/activate: false/}" geoschem_config.yml
-    sed -i "s/use_emission_scale_factor: false/use_emission_scale_factor: true/g" geoschem_config.yml
+    # sed -i "/analytical_inversion/{N;s/activate: true/activate: false/}" geoschem_config.yml
+    # sed -i "s/use_emission_scale_factor: false/use_emission_scale_factor: true/g" geoschem_config.yml
     
     # Update settings in HEMCO_Config.rc
     if "$LognormalErrors"; then
@@ -56,7 +56,8 @@ setup_posterior() {
     else
         gridded_posterior_filename="gridded_posterior.nc"
     fi
-    sed -i -e "s|--> Emis_ScaleFactor       :       false|--> Emis_ScaleFactor       :       true|g" \
+    sed -i -e "s|\.\./\.\.|\.\.|g" \
+           -e "s|--> Emis_PosteriorSF       :       false|--> Emis_PosteriorSF       :       true|g" \
            -e "s|gridded_posterior.nc|${RunDirs}/inversion/${gridded_posterior_filename}|g" HEMCO_Config.rc
     # Turn on LevelEdgeDiags output
     # Output daily restarts to avoid trouble at month boundaries
