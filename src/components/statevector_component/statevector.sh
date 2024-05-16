@@ -13,8 +13,8 @@ create_statevector() {
     # Use GEOS-FP or MERRA-2 CN file to determine ocean/land grid boxes
     if "$isRegional"; then
         if [ "$Res" == "0.125x0.15625" ]; then
-            LandCoverFile="/n/home00/xlwang/xlwang/methane_inversion/InputData/land_cover/data/IMERG_land_sea_mask_0125x015625.nc"
-            HemcoDiagFile="/n/home00/xlwang/xlwang/Test_12km/gc_0125x015625_NA_47L_geosfp_CH4_emission/OutputDir/HEMCO_diagnostics.202205010000.nc"
+            LandCoverFile="/n/holylfs05/LABS/jacob_lab/Users/xlwang/methane_inversion/InputData/land_cover/data/IMERG_land_sea_mask_0125x015625.nc"
+            HemcoDiagFile="/n/holylfs05/LABS/jacob_lab/Users/xlwang/run_methane/test_hemco_0125_annual_new/OutputDir/HEMCO_sa_diagnostics.202201010000.nc"
         else
             LandCoverFile="${DataPath}/GEOS_${gridDir}/${metDir}/${constYr}/01/${Met}.${constYr}0101.CN.${gridFile}.${RegionID}.${LandCoverFileExtension}"
             HemcoDiagFile="${DataPath}/HEMCO/CH4/v2023-04/HEMCO_SA_Output/HEMCO_sa_diagnostics.${gridFile}.20190101.nc"
